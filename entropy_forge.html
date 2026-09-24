@@ -1,0 +1,452 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>EntropyForge · Passwords + Identities</title>
+<style>
+@import url('https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@400;500;700&family=JetBrains+Mono:wght@400;600&display=swap');
+:root{--bg:#07040f;--mag:#ff4d9d;--cy:#22e4ff;--vio:#8b5cff;--yel:#ffd166;--txt:#cfc8e6;--bright:#fff;--dim:#8f86b0;--red:#ff5a7a;--grn:#3dffa0;--line:rgba(255,255,255,.09);--glass:rgba(255,255,255,.04);--r:14px;--ui:'Space Grotesk',system-ui,sans-serif;--mono:'JetBrains Mono',ui-monospace,Consolas,monospace}
+*{box-sizing:border-box}
+body{font-family:var(--ui);background:var(--bg);color:var(--txt);margin:0;padding:32px 14px 60px;min-height:100vh;display:flex;justify-content:center;align-items:flex-start;position:relative;overflow-x:hidden}
+body::before,body::after{content:"";position:fixed;width:60vmax;height:60vmax;border-radius:50%;filter:blur(90px);opacity:.28;pointer-events:none;z-index:0;animation:drift 22s ease-in-out infinite alternate}
+body::before{background:var(--vio);top:-25vmax;left:-15vmax}
+body::after{background:var(--mag);bottom:-30vmax;right:-20vmax;animation-delay:-11s;opacity:.2}
+@keyframes drift{to{transform:translate(8vmax,6vmax) scale(1.15)}}
+.container{width:100%;max-width:640px;position:relative;z-index:2;background:rgba(18,11,34,.68);backdrop-filter:blur(22px) saturate(140%);-webkit-backdrop-filter:blur(22px) saturate(140%);border:1px solid var(--line);border-radius:24px;box-shadow:0 30px 80px rgba(0,0,0,.6),inset 0 1px 0 rgba(255,255,255,.08);overflow:hidden}
+.container::before{content:"";position:absolute;inset:0 0 auto 0;height:2px;background:linear-gradient(90deg,transparent,var(--mag),var(--cy),transparent)}
+.term-bar{display:flex;align-items:center;gap:7px;padding:14px 22px 0}
+.dot{width:9px;height:9px;border-radius:50%;opacity:.9}.d1{background:var(--mag)}.d2{background:var(--yel)}.d3{background:var(--grn)}
+.path{margin-left:8px;font:400 .7rem var(--mono);color:var(--dim)}
+.pad{padding:18px 26px 28px}
+h1{font-weight:700;font-size:1.9rem;letter-spacing:-.5px;margin:6px 0 2px;color:var(--bright)}
+h1 span{background:linear-gradient(90deg,var(--mag),var(--cy));-webkit-background-clip:text;background-clip:text;color:transparent}
+.sub{font-size:.85rem;color:var(--dim);margin-bottom:20px}
+.tabs{display:flex;gap:4px;padding:4px;background:rgba(0,0,0,.35);border:1px solid var(--line);border-radius:999px;margin-bottom:20px}
+.tab{flex:1;background:transparent;border:none;color:var(--dim);font:500 .82rem var(--ui);padding:10px 8px;cursor:pointer;border-radius:999px;transition:.2s}
+.tab:hover{color:var(--bright)}
+.tab.on{background:linear-gradient(135deg,var(--mag),var(--vio));color:#fff;box-shadow:0 4px 18px rgba(139,92,255,.45)}
+.pane{display:none}.pane.on{display:block;animation:rise .35s ease}
+@keyframes rise{from{opacity:0;transform:translateY(8px)}}
+.box{position:relative;margin-bottom:14px}
+.out{background:rgba(0,0,0,.4);border:1px solid var(--line);border-radius:var(--r);padding:20px 48px 20px 18px;font:600 1.05rem var(--mono);color:var(--cy);word-break:break-all;min-height:26px;text-align:center;box-shadow:inset 0 0 30px rgba(34,228,255,.06)}
+.eye{position:absolute;right:12px;top:50%;transform:translateY(-50%);background:none;border:none;color:var(--dim);cursor:pointer;font-size:1.1rem;display:none}
+.eye:hover{color:var(--cy)}
+.stats{margin-bottom:18px;padding:14px 16px;background:var(--glass);border:1px solid var(--line);border-radius:var(--r);font-size:.82rem;color:var(--dim)}
+.row{display:flex;justify-content:space-between;margin-bottom:8px}
+.val{color:var(--bright);font:600 .82rem var(--mono)}.val.r{color:var(--mag)}
+.meter{display:flex;gap:4px;height:6px;margin:4px 0 12px}
+.seg{flex:1;background:rgba(255,255,255,.08);border-radius:99px;transition:.3s}
+.seg.f{background:linear-gradient(90deg,var(--mag),var(--cy));box-shadow:0 0 10px rgba(34,228,255,.45)}
+fieldset{border:1px solid var(--line);background:var(--glass);border-radius:var(--r);margin:0 0 14px;padding:14px 16px 16px}
+legend{font-size:.68rem;color:var(--cy);letter-spacing:1.5px;text-transform:uppercase;padding:0 8px;font-weight:500}
+.grid{display:grid;grid-template-columns:1fr 1fr;gap:10px}
+.opt{display:flex;align-items:center;gap:10px;background:rgba(0,0,0,.25);padding:10px 12px;border:1px solid var(--line);border-radius:12px;cursor:pointer;user-select:none;font-size:.84rem;transition:.2s}
+.opt:hover{border-color:rgba(34,228,255,.5)}
+input[type=checkbox]{appearance:none;-webkit-appearance:none;flex:none;width:34px;height:20px;border-radius:99px;background:rgba(255,255,255,.14);position:relative;cursor:pointer;margin:0 8px 0 0;transition:.2s}
+input[type=checkbox]::after{content:"";position:absolute;top:3px;left:3px;width:14px;height:14px;border-radius:50%;background:#fff;transition:.2s}
+input[type=checkbox]:checked{background:linear-gradient(135deg,var(--mag),var(--vio))}
+input[type=checkbox]:checked::after{transform:translateX(14px)}
+input[type=checkbox]:focus-visible{outline:2px solid var(--cy);outline-offset:2px}
+.sl{display:flex;justify-content:space-between;font-size:.84rem;margin:0 0 8px}
+.sl.g{margin-top:12px}
+input[type=range]{-webkit-appearance:none;appearance:none;width:100%;height:6px;border-radius:99px;outline:none;margin:0 0 14px;background:linear-gradient(90deg,var(--mag),var(--cy)) 0/var(--p,50%) 100% no-repeat,rgba(255,255,255,.12)}
+input[type=range]::-webkit-slider-thumb{-webkit-appearance:none;width:18px;height:18px;border-radius:50%;background:#fff;border:3px solid var(--cy);box-shadow:0 0 12px rgba(34,228,255,.7);cursor:pointer}
+input[type=range]::-moz-range-thumb{width:12px;height:12px;border-radius:50%;background:#fff;border:3px solid var(--cy);cursor:pointer}
+label.f{display:block;font-size:.68rem;color:var(--dim);letter-spacing:1px;margin-bottom:6px;font-weight:500}
+input[type=text],select,textarea{background:rgba(0,0,0,.35);border:1px solid var(--line);color:var(--bright);font:400 .88rem var(--mono);padding:10px 12px;outline:none;width:100%;border-radius:12px;margin-bottom:12px;transition:.2s}
+input[type=text]:focus,select:focus,textarea:focus{border-color:var(--cy);box-shadow:0 0 0 3px rgba(34,228,255,.15)}
+.split{display:flex;gap:12px}.split>div{flex:1}
+.chk{display:flex;gap:16px;font-size:.84rem;margin:2px 0 4px}.chk label{display:flex;align-items:center;cursor:pointer}
+.btns{display:flex;gap:10px;flex-wrap:wrap}
+button.b{border-radius:12px;padding:13px 20px;font:600 .85rem var(--ui);cursor:pointer;background:transparent;transition:.2s}
+button.b:active{transform:scale(.97)}
+.gen{background:linear-gradient(135deg,var(--mag),var(--vio))!important;border:none;color:#fff;flex:2;box-shadow:0 8px 24px rgba(255,77,157,.35)}
+.gen:hover{filter:brightness(1.12);box-shadow:0 10px 30px rgba(255,77,157,.5)}
+.cp{border:1px solid rgba(34,228,255,.6);color:var(--cy);flex:1}.cp:hover:not(:disabled){background:rgba(34,228,255,.1)}
+.wp{border:1px solid rgba(255,90,122,.6);color:var(--red);flex:1}.wp:hover:not(:disabled){background:rgba(255,90,122,.1)}
+button:disabled{opacity:.35;cursor:not-allowed}
+.cd{font-size:.74rem;color:var(--dim);text-align:center;margin-top:12px;min-height:14px}.cd .val{color:var(--yel)}
+.ban{display:none;background:rgba(255,90,122,.1);border:1px solid var(--red);color:var(--red);border-radius:12px;padding:10px 14px;font-size:.8rem;margin-bottom:14px}.ban.on{display:block}
+.card{background:var(--glass);border:1px solid var(--line);border-radius:var(--r);padding:12px 14px;margin-bottom:10px;position:relative;animation:rise .3s ease}
+.card::before{content:"";position:absolute;left:0;top:14px;bottom:14px;width:3px;border-radius:0 3px 3px 0;background:linear-gradient(var(--mag),var(--cy))}
+.ctop{display:flex;justify-content:space-between;align-items:center;margin-bottom:10px;padding-left:6px}
+.utxt{font:600 .98rem var(--mono);color:var(--bright);word-break:break-all}
+.badge{font:600 .6rem var(--ui);padding:3px 9px;letter-spacing:1px;border:1px solid;border-radius:99px;margin-left:10px}
+.LOW{color:var(--red)}.MED{color:var(--yel)}.HIGH{color:var(--grn)}
+.acts{display:flex;gap:6px;flex-wrap:wrap;padding-left:6px}
+.ib{background:rgba(255,255,255,.05);border:1px solid var(--line);color:var(--dim);font:500 .7rem var(--ui);padding:6px 10px;cursor:pointer;border-radius:8px;transition:.15s}
+.ib:hover{color:var(--cy);border-color:rgba(34,228,255,.5)}.ib.on{color:var(--yel);border-color:var(--yel)}.ib.ok{color:var(--grn);border-color:var(--grn)}
+.empty{text-align:center;color:var(--dim);font-size:.82rem;padding:26px 0}
+.mini{display:flex;gap:4px;margin:16px 0 12px;padding:4px;background:rgba(0,0,0,.35);border:1px solid var(--line);border-radius:999px}
+.mini .tab{padding:8px}
+details{margin:4px 0 0}summary{cursor:pointer;color:var(--cy);font-size:.8rem;padding:6px 0;font-weight:500}
+.hint{font-size:.76rem;color:var(--dim);margin:0 0 14px;line-height:1.5}
+.kit{background:rgba(0,0,0,.35);border:1px solid var(--line);border-radius:var(--r);padding:14px 16px;margin-bottom:12px}
+.kit small{display:block;font-size:.64rem;color:var(--dim);letter-spacing:1.2px;margin-bottom:6px}
+.kit div{color:var(--cy);word-break:break-all;font:600 1rem var(--mono)}
+::selection{background:var(--mag);color:#fff}
+@media(max-width:480px){.split{flex-direction:column;gap:0}.pad{padding:16px 16px 24px}.grid{grid-template-columns:1fr}}
+@media(prefers-reduced-motion:reduce){*,*::before,*::after{animation:none!important;transition:none!important}}
+</style>
+</head>
+<body>
+<div class="container">
+  <div class="term-bar"><div class="dot d1"></div><div class="dot d2"></div><div class="dot d3"></div><div class="path">entropy-forge · v2</div></div>
+  <div class="pad">
+    <h1>ENTROPY<span>FORGE</span></h1>
+    <div class="sub">Secure passwords and usernames, one console.</div>
+    <div class="tabs">
+      <button class="tab on" data-t="pw">PASSWORD</button>
+      <button class="tab" data-t="un">USERNAME</button>
+      <button class="tab" data-t="kit">IDENTITY KIT</button>
+    </div>
+
+    <!-- PASSWORD -->
+    <div class="pane on" id="pane-pw">
+      <div class="ban" id="banner">⚠ Secure random source unavailable (Web Crypto needs HTTPS or localhost). Password generation is disabled.</div>
+      <div class="box"><div class="out" id="pwOut">awaiting parameters...</div><button class="eye" id="eye" title="show / hide">👁</button></div>
+      <div class="stats">
+        <div class="row"><span>ENTROPY</span><span class="val" id="bits">0 bits</span></div>
+        <div class="row"><span>RATING</span><span class="val r" id="rating">NONE</span></div>
+        <div class="meter" id="meter"></div>
+        <div class="row" style="margin:0"><span>EST. CRACK TIME</span><span class="val" id="crack">—</span></div>
+      </div>
+      <fieldset><legend>Character Sets</legend>
+        <div class="grid">
+          <label class="opt"><input type="checkbox" id="cU" checked> Uppercase (A-Z)</label>
+          <label class="opt"><input type="checkbox" id="cL" checked> Lowercase (a-z)</label>
+          <label class="opt"><input type="checkbox" id="cN" checked> Numbers (0-9)</label>
+          <label class="opt"><input type="checkbox" id="cS" checked> Symbols (!@#$...)</label>
+        </div>
+        <label class="opt" style="margin-top:10px;border:none;background:none;padding:0"><input type="checkbox" id="cA"> Exclude ambiguous (0, O, 1, l, I, |)</label>
+      </fieldset>
+      <fieldset><legend>Structure</legend>
+        <div class="sl"><span>Segment length</span><span class="val" id="slv">15</span></div>
+        <input type="range" id="segLen" min="3" max="30" value="15">
+        <div class="sl"><span>Segments</span><span class="val" id="scv">4</span></div>
+        <input type="range" id="segCnt" min="1" max="8" value="4" style="margin:0">
+        <div class="sl g"><span>Total length</span><span class="val" id="tlv">63 chars</span></div>
+      </fieldset>
+      <div class="btns">
+        <button class="b gen" id="pwGen">Generate</button>
+        <button class="b cp" id="pwCopy" disabled>Copy</button>
+        <button class="b wp" id="pwWipe" disabled title="Clear password + clipboard (Esc)">Wipe</button>
+      </div>
+      <div class="cd" id="cd"></div>
+    </div>
+
+    <!-- USERNAME -->
+    <div class="pane" id="pane-un">
+      <div class="tabs" style="margin-bottom:14px">
+        <button class="tab on" id="mName">NAME MODE</button>
+        <button class="tab" id="mWord">WORD MODE</button>
+      </div>
+      <div id="nameRow"><label class="f">BASE NAME</label><input type="text" id="uName" placeholder="enter a name"></div>
+      <div class="split">
+        <div><label class="f">PREFIX</label><input type="text" id="uPre" placeholder="optional"></div>
+        <div><label class="f">SUFFIX</label><input type="text" id="uSuf" placeholder="optional"></div>
+      </div>
+      <div class="split">
+        <div><label class="f">CUSTOM NUMBERS</label><input type="text" id="uNum" placeholder="overrides random"></div>
+        <div><label class="f">NUMBER DIGITS: <span id="ndv">3</span></label><input type="range" id="uDig" min="2" max="6" value="3" style="margin-top:12px"></div>
+      </div>
+      <div class="split">
+        <div><label class="f">CASE STYLE</label>
+          <select id="uCase"><option value="asis">as typed</option><option value="lower">lowercase</option><option value="upper">UPPERCASE</option><option value="cap">Capitalize</option></select></div>
+        <div class="chk" style="align-items:center;padding-top:14px">
+          <label><input type="checkbox" id="uLeet"> 1337sp34k</label>
+          <label><input type="checkbox" id="uApp"> append</label>
+        </div>
+      </div>
+      <div class="btns">
+        <button class="b gen" id="uGen">Generate 10</button>
+        <button class="b cp" id="uClear" style="border-color:var(--edge);color:var(--dim)">Clear</button>
+      </div>
+      <details><summary>▸ PATTERN TEMPLATES</summary>
+        <p class="hint" style="margin-top:8px">tokens: {prefix} {name} {suffix} {numbers} — one per line</p>
+        <textarea id="patTxt" rows="5"></textarea>
+        <div class="btns"><button class="ib" id="patSave">SAVE</button><button class="ib" id="patReset">RESET</button></div>
+      </details>
+      <div class="mini">
+        <button class="tab on" id="vGen">GENERATED</button>
+        <button class="tab" id="vFav">★ FAVORITES (<span id="favN">0</span>)</button>
+      </div>
+      <div id="results"></div>
+      <div class="empty" id="empty">NO SIGNAL. Hit GENERATE to synthesize identities.</div>
+      <div class="btns" style="justify-content:center;margin-top:10px">
+        <button class="ib" id="copyAll">COPY ALL</button><button class="ib" id="exp">EXPORT .TXT</button>
+      </div>
+      <p class="hint" style="text-align:center;margin-top:14px">GH / X / R buttons only open the profile page in a new tab so you can check availability by hand. Nothing is sent anywhere automatically.</p>
+    </div>
+
+    <!-- KIT -->
+    <div class="pane" id="pane-kit">
+      <p class="hint">Forges a matching username + password using the current settings from the PASSWORD and USERNAME tabs.</p>
+      <div class="kit"><small>USERNAME</small><div id="kUser">—</div></div>
+      <div class="kit"><small>PASSWORD (click to reveal)</small><div id="kPass" style="cursor:pointer">—</div></div>
+      <div class="btns">
+        <button class="b gen" id="kGen">Forge identity</button>
+        <button class="b cp" id="kCopy" disabled>Copy both</button>
+        <button class="b wp" id="kWipe" disabled>Wipe</button>
+      </div>
+      <p class="hint" style="margin-top:12px">Copy both puts "username" and "password" on two lines. The password auto-wipes after 90s and the clipboard clears after 30s.</p>
+    </div>
+  </div>
+</div>
+
+<script>
+const $=id=>document.getElementById(id);
+const okCrypto=!!(window.crypto&&typeof crypto.getRandomValues==="function");
+// unbiased index via rejection sampling (Math.random only as a fallback for usernames, never passwords)
+function rnd(max){
+  if(!okCrypto) return Math.floor(Math.random()*max);
+  const lim=Math.floor(4294967296/max)*max,a=new Uint32Array(1);let v;
+  do{crypto.getRandomValues(a);v=a[0]}while(v>=lim);
+  return v%max;
+}
+function flash(btn,txt,cls){const o=btn.textContent;btn.textContent=txt;if(cls)btn.classList.add(cls);setTimeout(()=>{btn.textContent=o;if(cls)btn.classList.remove(cls)},1200)}
+
+/* ---------- tabs ---------- */
+document.querySelectorAll(".tabs>.tab[data-t]").forEach(b=>b.onclick=()=>{
+  document.querySelectorAll(".tabs>.tab[data-t]").forEach(x=>x.classList.toggle("on",x===b));
+  document.querySelectorAll(".pane").forEach(p=>p.classList.toggle("on",p.id==="pane-"+b.dataset.t));
+});
+
+/* ---------- PASSWORD ---------- */
+const POOLS={U:"ABCDEFGHIJKLMNOPQRSTUVWXYZ",L:"abcdefghijklmnopqrstuvwxyz",N:"0123456789",S:"!@#$%^&*()_+-=[]{}|;:,.<>?"};
+const AMB=new Set("0O1lI|");
+const WIPE_S=90,CLIP_S=30;
+let pw="",hidden=true,tWipe=null,tTick=null,tClip=null;
+
+if(!okCrypto){$("banner").classList.add("on");$("pwGen").disabled=true;$("kGen").disabled=true;$("pwOut").textContent="generation disabled — no secure random source"}
+
+function meter(bits){
+  const m=$("meter");m.innerHTML="";
+  const n=Math.max(0,Math.min(10,Math.round(bits/256*10)));
+  for(let i=0;i<10;i++){const s=document.createElement("div");s.className="seg"+(i<n?" f":"");m.appendChild(s)}
+}
+function syncSliders(){
+  const l=+$("segLen").value,c=+$("segCnt").value;
+  $("slv").textContent=l;$("scv").textContent=c;$("tlv").textContent=(l*c)+" chars";
+}
+$("segLen").oninput=$("segCnt").oninput=syncSliders;syncSliders();
+
+function crackTime(bits){
+  const sec=Math.pow(2,bits)/1e10,yrs=sec/31557600; // 10 billion guesses/sec offline attacker
+  if(yrs<1){
+    if(sec<1)return"instant";if(sec<60)return sec.toFixed(1)+" sec";
+    if(sec<3600)return(sec/60).toFixed(1)+" min";if(sec<86400)return(sec/3600).toFixed(1)+" hrs";
+    return(sec/86400).toFixed(1)+" days";
+  }
+  const u=[[1e63,"vigintillion"],[1e60,"novemdecillion"],[1e57,"octodecillion"],[1e54,"septendecillion"],[1e51,"sexdecillion"],[1e48,"quindecillion"],[1e45,"quattuordecillion"],[1e42,"tredecillion"],[1e39,"duodecillion"],[1e36,"undecillion"],[1e33,"decillion"],[1e30,"nonillion"],[1e27,"octillion"],[1e24,"septillion"],[1e21,"sextillion"],[1e18,"quintillion"],[1e15,"quadrillion"],[1e12,"trillion"],[1e9,"billion"],[1e6,"million"],[1e3,"thousand"]];
+  for(const[m,n]of u)if(yrs>=m)return(yrs/m).toFixed(2)+" "+n+" years";
+  return yrs.toFixed(1)+" years";
+}
+
+function clearTimers(){clearTimeout(tWipe);clearInterval(tTick);clearTimeout(tClip);tWipe=tTick=tClip=null}
+function armWipe(){
+  clearTimers();let r=WIPE_S;
+  const msg=()=>{$("cd").innerHTML='auto-wipe in <span class="val">'+r+'s</span> — press Esc to wipe now'};
+  msg();
+  tTick=setInterval(()=>{r--;if(r>0)msg()},1000);
+  tWipe=setTimeout(()=>wipe(false),WIPE_S*1000);
+}
+function wipe(manual){
+  clearTimers();pw="";hidden=true;
+  const o=$("pwOut");o.style.color="";
+  o.textContent=manual?"wiped.":"auto-wiped after "+WIPE_S+"s idle.";
+  $("eye").style.display="none";$("pwCopy").disabled=true;$("pwWipe").disabled=true;
+  $("cd").textContent="";$("bits").textContent="0 bits";$("rating").textContent="NONE";$("crack").textContent="—";meter(0);
+  try{navigator.clipboard.writeText("").catch(()=>{})}catch(e){}
+  renderKit();
+}
+addEventListener("keydown",e=>{if(e.key==="Escape"&&pw)wipe(true)});
+
+function activeChars(){
+  const ex=$("cA").checked,map={cU:"U",cL:"L",cN:"N",cS:"S"},pools={};
+  for(const id in map)if($(id).checked){const p=POOLS[map[id]];pools[map[id]]=ex?[...p].filter(c=>!AMB.has(c)).join(""):p}
+  return pools;
+}
+function buildPassword(){
+  const pools=activeChars(),keys=Object.keys(pools),all=keys.map(k=>pools[k]).join("");
+  if(!all.length)return null;
+  const sl=+$("segLen").value,sc=+$("segCnt").value,total=sl*sc,flat=[];
+  for(let i=0;i<total;i++)flat.push(all[rnd(all.length)]);
+  if(keys.length<=total)for(const k of keys){ // guarantee one char from each active class
+    const set=new Set(pools[k]);
+    if(!flat.some(c=>set.has(c)))flat[rnd(flat.length)]=pools[k][rnd(pools[k].length)];
+  }
+  const segs=[];for(let i=0;i<sc;i++)segs.push(flat.slice(i*sl,(i+1)*sl).join(""));
+  return{pw:segs.join("-"),bits:Math.floor(total*Math.log2(all.length))};
+}
+const mask=()=>[...pw].map(c=>c==="-"?"-":"•").join("");
+function renderPw(){$("pwOut").textContent=hidden?mask():pw;$("eye").textContent=hidden?"👁":"🙈"}
+function generatePassword(){
+  if(!okCrypto)return;
+  const o=$("pwOut");
+  try{
+    const r=buildPassword();
+    if(!r){
+      clearTimers();pw="";o.textContent="ERROR: no character set selected";o.style.color="var(--red)";
+      $("bits").textContent="0 bits";$("rating").textContent="INVALID SETUP";$("crack").textContent="—";meter(0);
+      $("pwCopy").disabled=$("pwWipe").disabled=true;$("eye").style.display="none";$("cd").textContent="";
+      renderKit();return;
+    }
+    o.style.color="";pw=r.pw;hidden=true;renderPw();$("eye").style.display="block";
+    $("bits").textContent=r.bits+" bits";
+    $("rating").textContent=r.bits>=128?"OVERPOWERED":r.bits>=80?"EXCELLENT":r.bits>=50?"MODERATE":"WEAK";
+    $("crack").textContent=crackTime(r.bits);meter(r.bits);
+    $("pwCopy").disabled=$("pwWipe").disabled=false;
+    armWipe();renderKit();
+  }catch(e){
+    console.error(e);clearTimers();pw="";o.textContent="ERROR: generation failed — see console";o.style.color="var(--red)";
+    $("pwCopy").disabled=$("pwWipe").disabled=true;$("eye").style.display="none";
+  }
+}
+// copy text, then best-effort clear the clipboard after CLIP_S seconds if it still matches
+function safeCopy(text,btn){
+  navigator.clipboard.writeText(text).then(()=>{
+    flash(btn,"Copied ✓");
+    clearTimeout(tClip);
+    tClip=setTimeout(()=>{
+      navigator.clipboard.readText().then(t=>{if(t===text)return navigator.clipboard.writeText("")})
+        .catch(()=>navigator.clipboard.writeText("").catch(()=>{}));
+    },CLIP_S*1000);
+  }).catch(e=>console.error("copy failed",e));
+}
+$("pwGen").onclick=generatePassword;
+$("pwWipe").onclick=()=>wipe(true);
+$("eye").onclick=()=>{hidden=!hidden;renderPw()};
+$("pwCopy").onclick=()=>{if(pw)safeCopy(pw,$("pwCopy"))};
+meter(0);
+
+/* ---------- USERNAME ---------- */
+const ADJ=["Neon","Chrome","Shadow","Volt","Ghost","Cyber","Static","Neural","Void","Glitch","Toxic","Rogue","Crimson","Obsidian","Quantum","Synth","Radio","Nova","Blade","Vector","Rust","Feral","Hollow","Wired"];
+const NOUN=["Wraith","Render","Circuit","Phantom","Reaper","Byte","Nexus","Drone","Cipher","Fang","Pulse","Rider","Hex","Core","Spectre","Falcon","Vortex","Grid","Runner","Sync","Echo","Warden","Kernel","Static"];
+const DEF_PAT=["{prefix}{name}{numbers}","{name}{suffix}{numbers}","{prefix}_{name}_{numbers}","{name}{numbers}","{prefix}{name}{suffix}{numbers}"];
+const K={used:"ug_used_v1",fav:"ug_favorites_v1",pat:"ug_patterns_v1"}; // same keys as the original tool, so saved favorites carry over
+const load=(k,d)=>{try{const r=localStorage.getItem(k);return r?JSON.parse(r):d}catch(e){return d}};
+const save=(k,v)=>{try{localStorage.setItem(k,JSON.stringify(v))}catch(e){}};
+const S={mode:"name",view:"gen",pats:load(K.pat,DEF_PAT),used:new Set(load(K.used,[])),fav:new Set(load(K.fav,[]))};
+
+function setMode(m){
+  S.mode=m;$("mName").classList.toggle("on",m==="name");$("mWord").classList.toggle("on",m==="word");
+  $("nameRow").style.display=m==="name"?"block":"none";
+}
+$("mName").onclick=()=>setMode("name");$("mWord").onclick=()=>setMode("word");
+$("uDig").oninput=e=>$("ndv").textContent=e.target.value;
+
+function applyCase(s,st){return st==="lower"?s.toLowerCase():st==="upper"?s.toUpperCase():st==="cap"?s.charAt(0).toUpperCase()+s.slice(1).toLowerCase():s}
+function leet(s){const m={a:"4",e:"3",i:"1",o:"0",s:"5",t:"7"};return[...s].map(c=>(m[c.toLowerCase()]&&rnd(10)<6)?m[c.toLowerCase()]:c).join("")}
+function createUsername(){
+  const pre=$("uPre").value.trim(),suf=$("uSuf").value.trim(),cn=$("uNum").value.trim(),d=+$("uDig").value;
+  let base=S.mode==="word"?ADJ[rnd(ADJ.length)]+NOUN[rnd(NOUN.length)]:($("uName").value.trim()||"User");
+  base=applyCase(base,$("uCase").value);
+  if($("uLeet").checked)base=leet(base);
+  let num=cn;if(!num){num=String(1+rnd(9));for(let i=1;i<d;i++)num+=rnd(10)}
+  const v={prefix:pre,suffix:suf,name:base,numbers:num};
+  return S.pats[rnd(S.pats.length)].replace(/\{(\w+)\}/g,(m,k)=>v[k]!==undefined?v[k]:"");
+}
+function strength(u){
+  let s=Math.min(u.length,20);const dg=(u.match(/\d/g)||[]).length;
+  s+=dg*3;if(/[_\-]/.test(u))s+=5;if(/[A-Z]/.test(u)&&/[a-z]/.test(u))s+=5;if(dg>=4)s+=8;
+  const p=Math.min(100,s*2);return p<40?"LOW":p<70?"MED":"HIGH";
+}
+function updEmpty(){
+  const has=$("results").children.length;
+  const e=$("empty");e.style.display=has?"none":"block";
+  e.textContent=S.view==="fav"?"NO FAVORITES SAVED. Star a username to keep it here.":"NO SIGNAL. Hit GENERATE to synthesize identities.";
+}
+function updFav(){$("favN").textContent=S.fav.size}
+function trim(){if(S.used.size>500)S.used=new Set([...S.used].slice(-500))}
+
+function buildCard(u,reroll){
+  const card=document.createElement("div");card.className="card";card.dataset.u=u;
+  const top=document.createElement("div");top.className="ctop";
+  const t=document.createElement("span");t.className="utxt";t.textContent=u;
+  const bd=document.createElement("span");
+  const setBadge=x=>{const s=strength(x);bd.className="badge "+s;bd.style.borderColor="currentColor";bd.textContent=s};
+  setBadge(u);top.append(t,bd);
+  const acts=document.createElement("div");acts.className="acts";
+  const mk=(txt,fn)=>{const b=document.createElement("button");b.className="ib";b.textContent=txt;b.onclick=()=>fn(b);acts.appendChild(b);return b};
+  const favBtn=mk("",()=>{
+    const cur=card.dataset.u;
+    S.fav.has(cur)?S.fav.delete(cur):S.fav.add(cur);
+    save(K.fav,[...S.fav]);paintFav();updFav();
+    if(S.view==="fav")renderFavs();
+  });
+  const paintFav=()=>{const on=S.fav.has(card.dataset.u);favBtn.classList.toggle("on",on);favBtn.textContent=on?"★ FAV":"☆ FAV"};
+  paintFav();
+  if(reroll)mk("⟳ REROLL",()=>{
+    let f,n=0;do{f=createUsername();n++}while(S.used.has(f)&&n<50);
+    S.used.add(f);trim();save(K.used,[...S.used]);
+    card.dataset.u=f;t.textContent=f;setBadge(f);paintFav();
+  });
+  mk("COPY",b=>navigator.clipboard.writeText(card.dataset.u).then(()=>flash(b,"COPIED","ok")).catch(()=>flash(b,"FAILED")));
+  [["GH ↗","https://github.com/"],["X ↗","https://x.com/"],["R ↗","https://www.reddit.com/user/"]].forEach(([l,url])=>
+    mk(l,()=>window.open(url+encodeURIComponent(card.dataset.u),"_blank","noopener")));
+  card.append(top,acts);return card;
+}
+function generateBatch(){
+  const c=$("results");
+  if(S.view!=="gen")setView("gen",true);
+  if(!$("uApp").checked)c.innerHTML="";
+  const local=new Set([...c.querySelectorAll(".utxt")].map(e=>e.textContent));
+  let added=0,tries=0;
+  while(added<10&&tries<300){
+    tries++;const u=createUsername();
+    if(local.has(u)||(S.used.has(u)&&tries<250))continue;
+    local.add(u);S.used.add(u);added++;c.appendChild(buildCard(u,true));
+  }
+  trim();save(K.used,[...S.used]);updEmpty();
+}
+function renderFavs(){const c=$("results");c.innerHTML="";S.fav.forEach(u=>c.appendChild(buildCard(u,false)));updEmpty()}
+function setView(v,skipRender){
+  S.view=v;$("vGen").classList.toggle("on",v==="gen");$("vFav").classList.toggle("on",v==="fav");
+  if(skipRender)return;
+  if(v==="fav")renderFavs();else{$("results").innerHTML="";updEmpty()}
+}
+$("vGen").onclick=()=>setView("gen");$("vFav").onclick=()=>setView("fav");
+$("uGen").onclick=generateBatch;
+$("uClear").onclick=()=>{$("results").innerHTML="";updEmpty()};
+document.querySelectorAll("#pane-un input[type=text]").forEach(i=>i.addEventListener("keydown",e=>{if(e.key==="Enter")generateBatch()}));
+const visible=()=>[...document.querySelectorAll("#results .utxt")].map(e=>e.textContent);
+$("copyAll").onclick=()=>{const l=visible();if(l.length)navigator.clipboard.writeText(l.join("\n")).then(()=>flash($("copyAll"),"COPIED","ok")).catch(()=>{})};
+$("exp").onclick=()=>{
+  const l=visible();if(!l.length)return;
+  const a=document.createElement("a");a.href=URL.createObjectURL(new Blob([l.join("\n")],{type:"text/plain"}));
+  a.download="usernames.txt";document.body.appendChild(a);a.click();a.remove();URL.revokeObjectURL(a.href);
+};
+$("patTxt").value=S.pats.join("\n");
+$("patSave").onclick=()=>{
+  const l=$("patTxt").value.split("\n").map(x=>x.trim()).filter(Boolean);
+  if(!l.length)return;S.pats=l;save(K.pat,l);flash($("patSave"),"SAVED","ok");
+};
+$("patReset").onclick=()=>{S.pats=DEF_PAT.slice();save(K.pat,S.pats);$("patTxt").value=S.pats.join("\n")};
+updFav();updEmpty();
+
+/* ---------- IDENTITY KIT ---------- */
+let kitUser="",kitShow=false;
+function renderKit(){
+  $("kUser").textContent=kitUser||"—";
+  $("kPass").textContent=pw?(kitShow?pw:mask()):"—";
+  $("kCopy").disabled=!(kitUser&&pw);$("kWipe").disabled=!(kitUser||pw);
+}
+$("kGen").onclick=()=>{
+  kitUser=createUsername();S.used.add(kitUser);trim();save(K.used,[...S.used]);
+  kitShow=false;generatePassword();renderKit();
+};
+$("kPass").onclick=()=>{if(pw){kitShow=!kitShow;renderKit()}};
+$("kCopy").onclick=()=>{if(kitUser&&pw)safeCopy(kitUser+"\n"+pw,$("kCopy"))};
+$("kWipe").onclick=()=>{kitUser="";kitShow=false;wipe(true)};
+renderKit();
+
+/* range fill for the gradient track */
+document.querySelectorAll("input[type=range]").forEach(r=>{
+  const f=()=>r.style.setProperty("--p",((r.value-r.min)/(r.max-r.min)*100)+"%");
+  r.addEventListener("input",f);f();
+});
+</script>
+</body>
+</html>
